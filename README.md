@@ -4,7 +4,7 @@
 
 ## Executive summary
 
-The environment moved from a **moderate** to a **low** internal risk posture in a single assessment cycle: 6 of 10 findings were fully remediated and verified the same day, 2 were remediated with documented residuals, 1 was formally risk-accepted, and 1 is closed by a scheduled decommission.
+The environment moved from a **moderate** to a **low** internal risk posture in a single assessment cycle: 7 of 10 findings were fully remediated and verified, 2 were remediated with documented residuals, and 1 was formally risk-accepted.
 
 The assessment found no internet exposure and confirmed that network segmentation between the attack-lab, monitored-workstation and home networks held in every direction tested. The material risks were all reachable from the internal home LAN:
 
@@ -47,7 +47,7 @@ The assessment covered all infrastructure on the home LAN (`192.168.0.0/24`) plu
 | .50 | File server (Samba in an LXC container) |
 | .52 | Proxmox Datacenter Manager |
 | .128 | DNS filter (Pi-hole) |
-| .222 | Legacy file server, pending decommission |
+| .222 | Legacy file server (decommissioned 24 November 2026) |
 
 **Out of scope:** four commercial network-monitoring appliances (.38, .55, .58, .142). Their open services were recorded for completeness but not tested, and vendor configuration is not discussed in this report.
 
@@ -95,7 +95,7 @@ Ten findings were raised: five Medium, two Low-Medium, two Low and one Low (stru
 | H-07 | BMC: legacy SSH (OpenSSH 7.4), 6-hour clock drift | .48 | Low-Medium | Remediated |
 | H-08 | rpcbind exposed on TCP/UDP 111 | .47, .49, .51 | Low | Remediated |
 | H-09 | Flat management network shared with household workstation | LAN | Low (structural) | Risk accepted |
-| H-10 | Legacy file server with prior SMB configuration | .222 | Low | Open, decommission planned |
+| H-10 | Legacy file server with prior SMB configuration | .222 | Low | Remediated (decommissioned) |
 
 ## Detailed findings
 
@@ -193,7 +193,9 @@ Each finding below lists its evidence, impact, the remediation applied and how i
 
 **Evidence:** the former file server (.222) still offers SMB on 139/445 with signing not required. Its data has been migrated to .50.
 
-**Remediation plan:** power off after the post-migration hold period, then delete.
+**Remediation (24 November 2026):** before shutdown, a checksum comparison confirmed all data was present on .50 and `smbstatus` showed no active sessions. Monitoring configuration referencing the VM was removed, a final backup was taken, and the VM was powered off with autostart disabled. It is retained, powered off, for a short hold period before permanent deletion.
+
+**Verification:** .222 no longer responds on the network.
 
 ## Positive observations
 
@@ -224,15 +226,15 @@ The final full TCP scan from the original vantage point (owner workstation, VLAN
 
 UDP and configuration changes not visible in a TCP scan were verified separately: UDP 111 and 137 `closed`, SNMP `Timeout: No Response`, SMB signing *required*, BMC clock within 1 second of reference.
 
-The gateway (.1), honeypot (.2), out-of-scope appliances and legacy file server (.222) were unchanged. The gateway's one ephemeral high port changed number between scans, which is expected behavior.
+The gateway (.1), honeypot (.2), out-of-scope appliances and legacy file server (.222) were unchanged at the time of the final scan; .222 was decommissioned afterwards (H-10). The gateway's one ephemeral high port changed number between scans, which is expected behavior.
 
 ## Residual risk and recommendations
 
-Residual risk is **Low**. It consists of authenticated web consoles reachable from the flat LAN (H-09), cleartext switch administration (H-05), one legacy BMC cipher (H-06) and the pending decommission (H-10).
+Residual risk is **Low**. It consists of authenticated web consoles reachable from the flat LAN (H-09), cleartext switch administration (H-05), and one legacy BMC cipher (H-06).
 
 | Priority | Recommendation | Addresses | Effort |
 | --- | --- | --- | --- |
-| 1 | Decommission the legacy file server after the migration hold period | H-10 | Low |
+| 1 | Permanently delete the decommissioned file server VM, its DHCP reservation and DNS record after the hold period | H-10 | Low |
 | 2 | Restrict management interfaces by source address (Proxmox firewall `management` IPSet, iDRAC IP Range, gateway policy for the switch and gateway consoles) to the workstation VLAN and required hosts | H-05, H-09 | Medium |
 | 3 | Enable TOTP two-factor authentication for `root@pam` on all hypervisors and for the gateway and Datacenter Manager accounts | H-09 | Low |
 | 4 | Re-run this assessment quarterly and after any new service is deployed, from the same vantage points, and diff against this baseline | All | Low |
