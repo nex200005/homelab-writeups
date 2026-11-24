@@ -248,29 +248,29 @@ The commands below reproduce the assessment and its verification. All are read-o
 
 ```bash
 nmap -sn 192.168.0.0/24 -oN 01-lan-hosts.txt
-nmap -sV -p- -T4 --open -oN 02-infra-tcp.txt 192.168.0.xxx
-nmap -sU --top-ports 100 -T4 --open -oN 04-infra-udp.txt 192.168.0.xxx
+nmap -sV -p- -T4 --open -oN 02-infra-tcp.txt 192.168.0.1-3,6,38,47-52,55,58,128,142,222
+nmap -sU --top-ports 100 -T4 --open -oN 04-infra-udp.txt 192.168.0.1,3,6,47-52,128
 ```
 
 **Targeted checks**
 
 ```bash
-nmap -p22 --script ssh-auth-methods --script-args ssh.user=root 192.168.0.xxx
-nmap -p139,445 --script smb-protocols,smb2-security-mode 192.168.0.xxx
+nmap -p22 --script ssh-auth-methods --script-args ssh.user=root 192.168.0.6,47,49,50,51,52
+nmap -p139,445 --script smb-protocols,smb2-security-mode 192.168.0.50,222
 nmap -p443 --script ssl-enum-ciphers 192.168.0.48
-nmap -p8006 --script "+ssl-enum-ciphers" 192.168.0.xxx
-nmap -sU -p623 --script ipmi-version,ipmi-cipher-zero 192.168.0.xxx
+nmap -p8006 --script "+ssl-enum-ciphers" 192.168.0.47,49,51
+nmap -sU -p623 --script ipmi-version,ipmi-cipher-zero 192.168.0.48
 ipmitool -v -I lanplus -H 192.168.0.48 -U root -P <invalid> chassis status
-snmpwalk -v2c -c public 192.168.0.xxx 1.3.6.1.2.1.1
-snmpwalk -v2c -c public 192.168.0.xxx 1.3.6.1.4.1.674.10892.5 | wc -l
-curl -skI https://192.168.0.xxx | grep -i '^date'; date -u
+snmpwalk -v2c -c public 192.168.0.48 1.3.6.1.2.1.1
+snmpwalk -v2c -c public 192.168.0.48 1.3.6.1.4.1.674.10892.5 | wc -l
+curl -skI https://192.168.0.48 | grep -i '^date'; date -u
 ```
 
 **Segmentation (from the LAN)**
 
 ```bash
 nmap -sn 192.168.20.0/24 192.168.30.0/24
-nmap -Pn -p22,80,443,445,3389 192.168.20.xxx 192.168.30.xxx 192.168.30.xxx
+nmap -Pn -p22,80,443,445,3389 192.168.20.182 192.168.30.10 192.168.30.20
 ```
 
 **Tool notes:** `ssl-enum-ciphers` does not run on Proxmox port 8006 without the `+` prefix, because the port also answers plain HTTP. Nmap 7.80 could not enumerate SSH authentication methods against OpenSSH 10 or detect TLS 1.3. Debian's `snmp` package ships without MIBs, so numeric OIDs were used.
